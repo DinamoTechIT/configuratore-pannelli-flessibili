@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "updatedAt": "2026-06-27",
+  "source": "manuale (sostituibile da Make + Airtable)",
+  "panel": {
+    "model": "SAT-220-F8MH",
+    "w": 220,
+    "vmp": 16.53,
+    "voc": 19.26,
+    "imp": 13.31,
+    "isc": 14.28
+  },
+  "systems": [
+    { "id": "sb2", "brand": "Anker", "name": "SOLIX SolarBank 2",
+      "inputs": 4, "maxSeries": 3, "maxParallel": 1, "vmax": 60, "note": "sb2" },
+    { "id": "sb3", "brand": "Anker", "name": "SOLIX SolarBank 3",
+      "inputs": 4, "maxSeries": 3, "maxParallel": 2, "vmax": 60, "note": "anker" },
+    { "id": "sb4", "brand": "Anker", "name": "SOLIX SolarBank 4",
+      "inputs": 4, "maxSeries": 3, "maxParallel": 3, "vmax": 60, "note": "anker" },
+    { "id": "streamUltra", "brand": "EcoFlow", "name": "STREAM (Ultra / Ultra X)",
+      "inputs": 4, "maxSeries": 3, "maxParallel": 1, "vmax": 60, "note": "ultra" },
+    { "id": "stream5000", "brand": "EcoFlow", "name": "STREAM 5000",
+      "inputs": 4, "maxSeries": 3, "maxParallel": 3, "vmax": 60, "startup": 20, "minSeries": 2, "note": "stream5000" }
+  ]
+}

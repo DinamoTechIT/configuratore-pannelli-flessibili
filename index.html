@@ -1,0 +1,355 @@
+<!--
+  DinamoTech — Configuratore Pannelli Flessibili 220 W
+  ----------------------------------------------------
+  COME AGGIORNARLO: tutti i dati dei sistemi e del pannello sono nel file
+  esterno data.json (stessa cartella). Per aggiungere/modificare un accumulo
+  basta intervenire li': non serve toccare questo file. La LOGICA ELETTRICA
+  (arrange, perMPPT, sezione cavo) resta nel blocco JS all'inizio del codice JS.
+  File autonomo: nessuna dipendenza JS, nessun salvataggio dati. Incorporabile.
+
+  EMBED CON ALTEZZA AUTOMATICA (iframe auto-resize):
+  questa pagina invia al parent l'altezza del contenuto via postMessage
+  ({ type:"dt-configuratore-height", height:<px> }). Nel sito che ospita
+  l'iframe aggiungi un listener "message" che imposta l'altezza dell'iframe
+  sul valore ricevuto (niente piu' altezza fissa). Lo snippet completo da
+  copiare e' nel README, sezione "Embed".
+
+  NB: il fetch di data.json richiede che il sito sia servito via http(s):
+  aperto da file:// (doppio click) i dati non si caricano.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configuratore Pannelli Flessibili 220 W — DinamoTech</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23242833'/%3E%3Cpath%20d='M18%204.5%20L8.5%2018%20L15%2018%20L14%2027.5%20L24%2014%20L17%2014%20Z'%20fill='%2387CB28'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F3F3F3; --card:#FFFFFF; --ink:#242833; --ink-soft:#5C616B; --line:#E4E5E7;
+    --sun:#87CB28; --sun-deep:#4E8011; --green:#5FA01A; --green-soft:#EDF6DF;
+    --amber-soft:#E9F5D6; --anker:#0B7A8C; --ecoflow:#2F6BD8; --warn:#B25E00; --warn-soft:#FBEEDB;
+    --radius:16px; --shadow:0 1px 2px rgba(36,40,51,.07), 0 8px 24px rgba(36,40,51,.08);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,system-ui,sans-serif;line-height:1.5;padding:24px 16px 56px}
+  .wrap{max-width:580px;margin:0 auto}
+
+  .head{display:flex;align-items:flex-start;gap:14px;margin-bottom:22px}
+  .bolt{flex:0 0 auto;margin-top:2px}
+  .eyebrow{font-family:"Space Grotesk",sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.14em;font-size:11px;color:var(--sun-deep)}
+  h1{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:clamp(22px,5.4vw,28px);line-height:1.12;margin:.18em 0 .25em;letter-spacing:-.01em}
+  .sub{color:var(--ink-soft);font-size:14.5px;margin:0;max-width:42ch}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+
+  .label{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;letter-spacing:.02em;display:block;margin-bottom:9px}
+  .q-num{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;margin-right:8px;vertical-align:1px}
+
+  select{width:100%;appearance:none;-webkit-appearance:none;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:13px 42px 13px 14px;cursor:pointer;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%23242833' stroke-width='2' stroke-linecap='round'><path d='M5 8l5 5 5-5'/></svg>");
+    background-repeat:no-repeat;background-position:right 13px center}
+  select:focus-visible{outline:3px solid var(--sun);outline-offset:1px;border-color:var(--sun)}
+
+  .stepper{display:flex;align-items:center;gap:0;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;width:fit-content;background:var(--paper)}
+  .stepper button{font:inherit;border:0;background:transparent;cursor:pointer;width:52px;height:50px;font-size:22px;color:var(--ink);display:grid;place-items:center}
+  .stepper button:hover:not(:disabled){background:var(--amber-soft)}
+  .stepper button:disabled{color:#C9C2B2;cursor:not-allowed}
+  .stepper button:focus-visible{outline:3px solid var(--sun);outline-offset:-3px}
+  .count{min-width:64px;text-align:center;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:22px;border-left:1.5px solid var(--line);border-right:1.5px solid var(--line);line-height:50px}
+  .count small{display:block;font-family:Inter;font-weight:500;font-size:10.5px;color:var(--ink-soft);line-height:1;margin-top:-6px;letter-spacing:.02em}
+  .hint{color:var(--ink-soft);font-size:12.5px;margin:10px 0 0}
+
+  .dist{display:flex;align-items:center;gap:14px;margin-top:4px}
+  .dist input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:999px;background:var(--line);outline:none}
+  .dist input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;background:var(--sun);border:3px solid #fff;box-shadow:var(--shadow);cursor:pointer}
+  .dist input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--sun);border:3px solid #fff;box-shadow:var(--shadow);cursor:pointer}
+  .dist input[type=range]:focus-visible{outline:3px solid var(--sun);outline-offset:4px}
+  .dist .val{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:18px;min-width:58px;text-align:right}
+
+  .verdict{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .badge{flex:0 0 auto;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff}
+  .verdict h2{font-family:"Space Grotesk",sans-serif;font-size:18px;margin:0;font-weight:700}
+  .brandtag{font-family:"Space Grotesk",sans-serif;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:3px 8px;border-radius:999px;color:#fff}
+
+  .keyline{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 4px}
+  .stat{flex:1 1 120px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .stat .n{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:21px;line-height:1}
+  .stat .k{font-size:11.5px;color:var(--ink-soft);margin-top:5px;letter-spacing:.01em}
+
+  .how{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin:22px 0 12px}
+
+  .map{display:flex;flex-direction:column;gap:10px}
+  .inp{display:flex;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .panels{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+  .pan{width:30px;height:42px;border-radius:4px;background:linear-gradient(160deg,#2b2b2f,#101013);border:1.5px solid #000;position:relative;box-shadow:inset 0 0 0 2px rgba(255,255,255,.04)}
+  .pan::before,.pan::after{content:"";position:absolute;left:3px;right:3px;height:1px;background:rgba(255,255,255,.10)}
+  .pan::before{top:14px}.pan::after{top:28px}
+  .link{font-family:"Space Grotesk",sans-serif;font-weight:700;color:var(--green);font-size:13px}
+  .arrow{flex:1 1 auto;height:2px;background:repeating-linear-gradient(90deg,var(--green) 0 7px,transparent 7px 13px);position:relative;min-width:18px}
+  .arrow::after{content:"";position:absolute;right:-2px;top:-4px;border:5px solid transparent;border-left-color:var(--green)}
+  .port{flex:0 0 auto;display:flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:9px;padding:9px 12px;font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:12.5px}
+  .port .dot{width:9px;height:9px;border-radius:50%;background:var(--sun)}
+  .mode-tag{font-size:11px;color:var(--ink-soft);font-weight:500;margin-left:2px}
+
+  .steps{margin:18px 0 0;padding:0;list-style:none;counter-reset:s}
+  .steps li{position:relative;padding:0 0 0 30px;margin:0 0 10px;font-size:14px;color:var(--ink)}
+  .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:-1px;width:21px;height:21px;border-radius:6px;background:var(--amber-soft);color:var(--sun-deep);font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:12px;display:grid;place-items:center}
+
+  .cable{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .cable .row1{display:flex;align-items:center;gap:12px;margin-bottom:9px}
+  .cable .sec{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:21px;color:var(--ink);background:var(--amber-soft);border-radius:9px;padding:6px 13px;white-space:nowrap}
+  .cable .lbl{font-size:13.5px;color:var(--ink-soft);line-height:1.45}
+
+  .note{display:flex;gap:10px;border-radius:12px;padding:12px 14px;font-size:13.5px;margin-top:12px}
+  .note.warn{background:var(--warn-soft);color:#6e3c00}
+  .note.info{background:var(--green-soft);color:#0c5b3c}
+  .note .ic{flex:0 0 auto;font-weight:700}
+
+  .basis{font-size:12px;color:var(--ink-soft);margin-top:18px;padding-top:14px;border-top:1px dashed var(--line)}
+
+  .cta{background:var(--ink);color:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+  .cta h3{font-family:"Space Grotesk",sans-serif;font-size:16px;margin:0 0 6px}
+  .cta p{margin:0 0 14px;font-size:14px;color:#D6DCD9}
+  .btn{display:inline-block;background:var(--sun);color:#fff;text-decoration:none;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:14.5px;padding:12px 20px;border-radius:11px}
+  .btn:focus-visible{outline:3px solid #fff;outline-offset:2px}
+  .disclaimer{font-size:11.5px;color:var(--ink-soft);text-align:center;margin:18px auto 0;max-width:46ch}
+
+  @media (prefers-reduced-motion: no-preference){
+    .card,.cta{animation:rise .4s ease both}
+    @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <svg class="bolt" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+      <path d="M21.7 3.3 L5 23.3 L20 23.3 L18.3 36.7 L35 16.7 L20 16.7 Z" fill="#87CB28"/>
+    </svg>
+    <div>
+      <span class="eyebrow">DinamoTech · Mini fotovoltaico</span>
+      <h1>Quanti pannelli flessibili posso montare?</h1>
+      <p class="sub">Scegli il tuo sistema di accumulo: ti dico quanti pannelli da 220&nbsp;W puoi collegare, come cablarli e che cavo ti serve.</p>
+    </div>
+  </header>
+
+  <div class="card">
+    <label class="label" for="sys"><span class="q-num">1</span>Che sistema di accumulo hai?</label>
+    <select id="sys" aria-label="Sistema di accumulo"></select>
+
+    <label class="label" for="dec" style="margin-top:20px"><span class="q-num">2</span>Quanti pannelli vuoi montare?</label>
+    <div class="stepper" role="group" aria-label="Numero di pannelli">
+      <button id="dec" type="button" aria-label="Togli un pannello">−</button>
+      <div class="count"><span id="cnt">2</span><small>pannelli</small></div>
+      <button id="inc" type="button" aria-label="Aggiungi un pannello">+</button>
+    </div>
+    <p class="hint" id="maxhint"></p>
+
+    <label class="label" for="dist-range" style="margin-top:20px"><span class="q-num">3</span>Distanza tra pannelli e accumulo</label>
+    <div class="dist">
+      <input id="dist-range" type="range" min="1" max="25" value="5" step="1" aria-label="Distanza in metri">
+      <span class="val"><span id="distv">5</span> m</span>
+    </div>
+    <p class="hint">La lunghezza del percorso del cavo dall'accumulo al pannello più lontano.</p>
+  </div>
+
+  <div class="card" id="result" aria-live="polite"></div>
+
+  <div class="cta">
+    <h3>Pronto a partire?</h3>
+    <p>Trovi il kit 2×220&nbsp;W sullo store DinamoTech. Per la detrazione fiscale del 50% scegli il bonifico per agevolazione fiscale al checkout.</p>
+    <a class="btn" href="https://dinamotech.it/products/pannelli-fotovoltaici-flessibili-ultraleggeri-440-w-2x220-w" target="_blank" rel="noopener">Vai al kit pannelli →</a>
+  </div>
+
+  <p class="disclaimer">Indicazioni basate sulle schede tecniche dei sistemi (giugno 2026) e sulle regole di cablaggio DinamoTech. Verifica sempre il manuale del tuo modello e la normativa locale prima del collegamento. In caso di dubbio, rivolgiti a un installatore.</p>
+</div>
+
+<script>
+/* ============================================================
+   Configuratore Pannelli Flessibili — DinamoTech
+   DATI ESTERNI: pannello e sistemi vengono caricati da data.json.
+   La LOGICA ELETTRICA resta qui (arrange, perMPPT, sezione cavo).
+   NB: il fetch richiede che il file sia servito via http(s):
+       aperto da file:// (doppio click) i dati non si caricano.
+   ============================================================ */
+
+const $ = s => document.querySelector(s);
+const sysSel=$("#sys"), cntEl=$("#cnt"), incB=$("#inc"), decB=$("#dec"),
+      distR=$("#dist-range"), distV=$("#distv");
+
+let PANEL=null, SYSTEMS=[], current=null, count=2, dist=5;
+
+/* brand → colore del tag (così data.json non deve contenere CSS) */
+const BRAND_COLOR = { "Anker":"var(--anker)", "EcoFlow":"var(--ecoflow)" };
+
+/* sezione cavo per distanza — regola normativa fissa (script cavi DinamoTech) */
+function cableSection(d){
+  if(d<=6)  return "2,5 mm²";
+  if(d<=10) return "4,0 mm²";
+  if(d<=15) return "6,0 mm²";
+  return "10 mm²";
+}
+
+const perMPPT  = s => s.maxSeries * s.maxParallel;
+const maxTotal = s => perMPPT(s) * s.inputs;
+const note = (kind,ic,txt)=>`<div class="note ${kind}"><span class="ic">${ic}</span><div>${txt}</div></div>`;
+const num  = x => String(x).replace('.',',');
+
+/* comunica al parent l'altezza del contenuto, per l'auto-resize dell'iframe */
+function postHeight(){
+  try{
+    const h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    parent.postMessage({ type:"dt-configuratore-height", height:h }, "*");
+  }catch(e){}
+}
+
+/* distribuisce n pannelli sugli ingressi MPPT → [{k, ser, par}] per ingresso usato */
+function arrange(s,n){
+  const S=s.maxSeries, P=s.maxParallel, M=s.inputs, minS=s.minSeries||1;
+
+  if(minS>1){
+    // forma stringhe in serie (mai pannelli singoli), poi le distribuisce
+    const nStrings=Math.max(1, Math.ceil(n/S));
+    const base=Math.floor(n/nStrings), rem=n%nStrings;
+    const lens=[]; for(let i=0;i<nStrings;i++) lens.push(base+(i<rem?1:0));
+    const mUsed=Math.min(M, nStrings);
+    const buckets=Array.from({length:mUsed},()=>[]);
+    lens.forEach((L,idx)=>buckets[idx%mUsed].push(L));
+    return buckets.map(ls=>({ k:ls.reduce((a,b)=>a+b,0), ser:Math.max(...ls), par:ls.length }));
+  }
+
+  const mUsed=Math.min(M,n);
+  const groups=[]; let left=n;
+  for(let i=0;i<mUsed;i++){ const k=Math.ceil(left/(mUsed-i)); left-=k; groups.push(k); }
+  return groups.map(k=>{ const par=Math.min(P,Math.ceil(k/S)); return {k, ser:Math.ceil(k/par), par}; });
+}
+
+function render(){
+  const s=current, mx=maxTotal(s), P=s.maxParallel;
+  count=Math.min(Math.max(1,count),mx);
+  cntEl.textContent=count;
+  decB.disabled=count<=1; incB.disabled=count>=mx;
+  $("#maxhint").textContent=`Massimo ${mx} pannelli: ${perMPPT(s)} per ingresso × ${s.inputs} ingressi MPPT.`;
+
+  const arr=arrange(s,count);
+  const totW=count*PANEL.w;
+  const hasPar=arr.some(g=>g.par>1);
+
+  const rows=arr.map((g,i)=>{
+    let desc;
+    if(g.k===1) desc="1 pannello";
+    else if(g.par===1) desc=`${g.ser} in serie`;
+    else if(g.ser===1) desc=`${g.par} in parallelo`;
+    else desc=`${g.ser} in serie × ${g.par} in parallelo`;
+    return `<div class="inp">
+        <div class="port"><span class="dot"></span>Ingresso ${i+1}</div>
+        <span class="mode-tag">${desc} · <b>${g.k} ${g.k===1?'pannello':'pannelli'}</b></span>
+      </div>`;
+  }).join("");
+
+  const steps=[
+    `<b>In serie</b> (per alzare la tensione): collega il <b>+</b> di un pannello al <b>−</b> del successivo, fino a <b>${s.maxSeries}</b> pannelli per stringa.`,
+    P>1
+      ? `<b>In parallelo</b> (per aggiungere potenza): unisci più stringhe con un cavo a Y — <b>+</b> con <b>+</b>, <b>−</b> con <b>−</b> — fino a <b>${P}</b> per ingresso.`
+      : `Su questo sistema, <b>una sola stringa per ingresso</b>: due in parallelo supererebbero la corrente massima.`,
+    `Porta ogni stringa a un ingresso MPPT. Hai <b>${s.inputs} ingressi</b>.`,
+  ];
+
+  const sec=cableSection(dist);
+  const cable=`
+    <p class="how">Il cavo che ti serve</p>
+    <div class="cable">
+      <div class="row1">
+        <span class="sec">${sec}</span>
+        <span class="lbl">sezione minima consigliata<br>per ${dist}&nbsp;m di distanza</span>
+      </div>
+      <div class="lbl">${ dist<=3
+        ? `✓ I due cavi da 3&nbsp;m inclusi nel kit bastano: usali così come sono.`
+        : `Oltre i 3&nbsp;m del kit, usa <b>un solo cavo</b> della lunghezza giusta — <b>non</b> più prolunghe MC4 una in fila all'altra: ogni giunzione fa cadere la tensione.` }</div>
+      <div class="note warn" style="margin-top:10px"><span class="ic">!</span><div>Usa solo <b>cavo solare H1Z2Z2-K</b> (doppio isolamento, resistente a raggi UV, calore e intemperie). Mai cavo elettrico normale.</div></div>
+    </div>`;
+
+  const vSeriesMax = num((s.maxSeries*PANEL.voc).toFixed(1));
+  let notes="";
+  notes+=note("info","i",`<b>Perché al massimo ${s.maxSeries} in serie?</b> ${s.maxSeries} pannelli in serie arrivano a ~${vSeriesMax}&nbsp;V a vuoto, appena sotto il limite di <b>${s.vmax}&nbsp;V</b> degli ingressi. Uno in più lo supererebbe.`);
+  if(P>1)
+    notes+=note("info","i",`<b>Perché fino a ${P} in parallelo?</b> Più stringhe sommano la corrente: ${P} è il massimo che resta entro il limite dell'ingresso di questo sistema.`);
+  if(s.note==="sb2")
+    notes+=note("info","i",`La SolarBank 2 accetta <b>una sola stringa per ingresso</b> (due in parallelo supererebbero ~20&nbsp;A). La <b>Pro</b> ha 4 ingressi, la <b>Plus</b> solo 2.`);
+  if(s.note==="ultra")
+    notes+=note("info","i",`Gli ingressi della STREAM Ultra sono di tipo parallelo ma a corrente contenuta: <b>una stringa per ingresso</b>. La <b>Ultra X</b> ha la stessa corrente d'ingresso della Ultra. Per il parallelo verifica il limite di corrente sul manuale del tuo modello.`);
+  if(s.note==="stream5000"){
+    notes+=note("warn","!",`Il manuale della STREAM 5000 sconsiglia genericamente la serie (pensata per pannelli ad alta tensione): con questi pannelli, ${s.maxSeries} in serie restano sotto i ${s.vmax}&nbsp;V. Attenzione però: un <b>singolo</b> pannello (Voc ${num(PANEL.voc)}&nbsp;V) è sotto i <b>${s.startup}&nbsp;V di avvio dell'MPPT</b> — collegane almeno 2 in serie per avviarlo senza problemi.`);
+    notes+=note("warn","!",`Con <b>3 stringhe in parallelo</b> la corrente si avvicina al limite dell'ingresso: si consiglia di proteggere ogni ingresso con un <b>sezionatore o un fusibile</b> con amperaggio coerente con i limiti della STREAM 5000.`);
+  }
+  if(hasPar)
+    notes+=note("info","Y",`Per il <b>parallelo</b> serve un cavo a Y (sdoppiatore MC4): unisci i poli <b>+</b> tra loro e i <b>−</b> tra loro.`);
+  notes+=note("info","i",`In Italia un impianto plug&nbsp;&&nbsp;play immette in rete <b>max 800&nbsp;W</b>: è il sistema a limitarlo. Puoi installare più Watt di pannelli — l'extra rende di più con poca luce.`);
+
+  $("#result").innerHTML=`
+    <div class="verdict">
+      <span class="badge" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 5"/></svg>
+      </span>
+      <h2>Compatibile</h2>
+      <span class="brandtag" style="background:${s.color}">${s.brand}</span>
+    </div>
+
+    <p class="how">Capacità per ingresso MPPT</p>
+    <div class="keyline">
+      <div class="stat"><div class="n">fino a ${s.maxSeries}</div><div class="k">in serie / MPPT</div></div>
+      <div class="stat"><div class="n">${P===1?'1':'fino a '+P}</div><div class="k">in parallelo / MPPT</div></div>
+      <div class="stat"><div class="n">${perMPPT(s)}</div><div class="k">pannelli / MPPT</div></div>
+      <div class="stat"><div class="n">${mx}</div><div class="k">totale · ${s.inputs} ingressi MPPT</div></div>
+    </div>
+
+    <p class="how">La tua configurazione · ${count} ${count===1?'pannello':'pannelli'} (${totW}&nbsp;W di picco)</p>
+    <div class="map">${rows}</div>
+
+    <p class="how">Come collegarli</p>
+    <ol class="steps">${steps.map(t=>`<li>${t}</li>`).join("")}</ol>
+
+    ${cable}
+    ${notes}
+
+    <p class="basis">Calcolo sul pannello DinamoTech ${PANEL.w}&nbsp;W — Vmp ${num(PANEL.vmp)}&nbsp;V · Voc ${num(PANEL.voc)}&nbsp;V · Isc ${num(PANEL.isc)}&nbsp;A · MC4. Serie max ${s.maxSeries} (≤${s.vmax}&nbsp;V); parallelo limitato dalla corrente dell'ingresso.</p>
+  `;
+
+  postHeight();
+}
+
+/* ---- bootstrap: carica data.json, poi avvia ---- */
+async function init(){
+  $("#result").innerHTML = `<p class="hint" style="padding:6px 2px">Carico i dati del configuratore…</p>`;
+  try{
+    const res = await fetch("data.json", { cache:"no-cache" });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data = await res.json();
+    PANEL   = data.panel;
+    SYSTEMS = (data.systems||[]).map(s=>({ ...s, color: s.color || BRAND_COLOR[s.brand] || "var(--ink)" }));
+    if(!PANEL || !SYSTEMS.length) throw new Error("data.json incompleto o vuoto");
+  }catch(err){
+    console.error("Configuratore: impossibile caricare data.json", err);
+    $("#result").innerHTML = note("warn","!","Non riesco a caricare i dati del configuratore in questo momento. Riprova fra poco.");
+    sysSel.disabled = incB.disabled = decB.disabled = distR.disabled = true;
+    postHeight();
+    return;
+  }
+
+  SYSTEMS.forEach(s=>{ const o=document.createElement("option"); o.value=s.id; o.textContent=`${s.brand} · ${s.name}`; sysSel.appendChild(o); });
+  current = SYSTEMS.find(s=>s.id==="sb3") || SYSTEMS[0];
+  sysSel.value = current.id;
+
+  sysSel.addEventListener("change",e=>{ current=SYSTEMS.find(x=>x.id===e.target.value); count=Math.min(count,maxTotal(current)); render(); });
+  incB.addEventListener("click",()=>{ count++; render(); });
+  decB.addEventListener("click",()=>{ count--; render(); });
+  distR.addEventListener("input",e=>{ dist=+e.target.value; distV.textContent=dist; render(); });
+  render();
+}
+
+/* l'altezza può cambiare con il ridimensionamento della finestra / il caricamento dei font */
+window.addEventListener("resize", postHeight);
+window.addEventListener("load", postHeight);
+init();
+</script>
