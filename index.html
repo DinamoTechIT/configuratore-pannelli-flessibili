@@ -1,10 +1,11 @@
 <!--
   DinamoTech — Configuratore Pannelli Flessibili 220 W
   ----------------------------------------------------
-  COME AGGIORNARLO: tutti i dati dei sistemi e del pannello sono nel file
-  esterno data.json (stessa cartella). Per aggiungere/modificare un accumulo
-  basta intervenire li': non serve toccare questo file. La LOGICA ELETTRICA
-  (arrange, perMPPT, sezione cavo) resta nel blocco JS all'inizio del codice JS.
+  COME AGGIORNARLO: tutti i dati dei sistemi, del pannello e i link allo store
+  sono nel file esterno data.json (stessa cartella). Per aggiungere/modificare
+  un accumulo o cambiare gli URL prodotto basta intervenire li': non serve
+  toccare questo file. La LOGICA ELETTRICA (arrange, perMPPT, sezione cavo,
+  inverter personalizzato) resta nel blocco JS all'inizio del codice JS.
   File autonomo: nessuna dipendenza JS, nessun salvataggio dati. Incorporabile.
 
   EMBED CON ALTEZZA AUTOMATICA (iframe auto-resize):
@@ -52,6 +53,14 @@
     background-repeat:no-repeat;background-position:right 13px center}
   select:focus-visible{outline:3px solid var(--sun);outline-offset:1px;border-color:var(--sun)}
 
+  /* inverter personalizzato */
+  .custombox{margin-top:14px;border:1.5px dashed var(--line);border-radius:12px;padding:14px;background:var(--paper)}
+  .cfields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cfields label{font-size:12.5px;color:var(--ink-soft);font-weight:500;display:flex;flex-direction:column;gap:5px}
+  .cfields .opt{color:var(--sun-deep);font-weight:600}
+  .cfields input{font:inherit;font-size:16px;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+  .cfields input:focus-visible{outline:3px solid var(--sun);outline-offset:1px;border-color:var(--sun)}
+
   .stepper{display:flex;align-items:center;gap:0;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;width:fit-content;background:var(--paper)}
   .stepper button{font:inherit;border:0;background:transparent;cursor:pointer;width:52px;height:50px;font-size:22px;color:var(--ink);display:grid;place-items:center}
   .stepper button:hover:not(:disabled){background:var(--amber-soft)}
@@ -82,13 +91,6 @@
 
   .map{display:flex;flex-direction:column;gap:10px}
   .inp{display:flex;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
-  .panels{display:flex;align-items:center;gap:7px;flex:0 0 auto}
-  .pan{width:30px;height:42px;border-radius:4px;background:linear-gradient(160deg,#2b2b2f,#101013);border:1.5px solid #000;position:relative;box-shadow:inset 0 0 0 2px rgba(255,255,255,.04)}
-  .pan::before,.pan::after{content:"";position:absolute;left:3px;right:3px;height:1px;background:rgba(255,255,255,.10)}
-  .pan::before{top:14px}.pan::after{top:28px}
-  .link{font-family:"Space Grotesk",sans-serif;font-weight:700;color:var(--green);font-size:13px}
-  .arrow{flex:1 1 auto;height:2px;background:repeating-linear-gradient(90deg,var(--green) 0 7px,transparent 7px 13px);position:relative;min-width:18px}
-  .arrow::after{content:"";position:absolute;right:-2px;top:-4px;border:5px solid transparent;border-left-color:var(--green)}
   .port{flex:0 0 auto;display:flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:9px;padding:9px 12px;font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:12.5px}
   .port .dot{width:9px;height:9px;border-radius:50%;background:var(--sun)}
   .mode-tag{font-size:11px;color:var(--ink-soft);font-weight:500;margin-left:2px}
@@ -101,6 +103,16 @@
   .cable .row1{display:flex;align-items:center;gap:12px;margin-bottom:9px}
   .cable .sec{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:21px;color:var(--ink);background:var(--amber-soft);border-radius:9px;padding:6px 13px;white-space:nowrap}
   .cable .lbl{font-size:13.5px;color:var(--ink-soft);line-height:1.45}
+
+  /* lista d'acquisto */
+  .buylist{display:flex;flex-direction:column;gap:10px}
+  .buyrow{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;transition:border-color .15s,background .15s}
+  .buyrow:hover{border-color:var(--sun);background:#fff}
+  .buyrow:focus-visible{outline:3px solid var(--sun);outline-offset:1px}
+  .buyrow .bi{flex:0 0 auto;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:9px;background:var(--ink);color:var(--sun)}
+  .buyrow .bt{flex:1 1 auto;font-size:14px;line-height:1.35}
+  .buyrow .bt small{display:block;color:var(--ink-soft);font-size:12px}
+  .buyrow .bgo{flex:0 0 auto;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:12.5px;color:var(--green);white-space:nowrap}
 
   .note{display:flex;gap:10px;border-radius:12px;padding:12px 14px;font-size:13.5px;margin-top:12px}
   .note.warn{background:var(--warn-soft);color:#6e3c00}
@@ -136,6 +148,20 @@
     <label class="label" for="sys"><span class="q-num">1</span>Che sistema di accumulo hai?</label>
     <select id="sys" aria-label="Sistema di accumulo"></select>
 
+    <div class="custombox" id="customBox" hidden>
+      <div class="cfields">
+        <label for="c-inputs">Ingressi MPPT
+          <input id="c-inputs" type="number" inputmode="numeric" min="1" max="12" step="1" value="4"></label>
+        <label for="c-vmax">Tensione max ingresso (V)
+          <input id="c-vmax" type="number" inputmode="decimal" min="1" step="1" value="60"></label>
+        <label for="c-imax">Corrente max ingresso (A)
+          <input id="c-imax" type="number" inputmode="decimal" min="0" step="0.1" value="40"></label>
+        <label for="c-startup">Avvio MPPT (V) <span class="opt">opzionale</span>
+          <input id="c-startup" type="number" inputmode="decimal" min="0" step="1" value="" placeholder="—"></label>
+      </div>
+      <p class="hint">Trovi questi dati nella scheda tecnica del tuo inverter, nella sezione ingressi fotovoltaici / MPPT.</p>
+    </div>
+
     <label class="label" for="dec" style="margin-top:20px"><span class="q-num">2</span>Quanti pannelli vuoi montare?</label>
     <div class="stepper" role="group" aria-label="Numero di pannelli">
       <button id="dec" type="button" aria-label="Togli un pannello">−</button>
@@ -166,17 +192,28 @@
 <script>
 /* ============================================================
    Configuratore Pannelli Flessibili — DinamoTech
-   DATI ESTERNI: pannello e sistemi vengono caricati da data.json.
-   La LOGICA ELETTRICA resta qui (arrange, perMPPT, sezione cavo).
+   DATI ESTERNI: pannello, sistemi e link store da data.json.
+   La LOGICA ELETTRICA resta qui (arrange, perMPPT, sezione cavo,
+   inverter personalizzato).
    NB: il fetch richiede che il file sia servito via http(s):
        aperto da file:// (doppio click) i dati non si caricano.
    ============================================================ */
 
 const $ = s => document.querySelector(s);
 const sysSel=$("#sys"), cntEl=$("#cnt"), incB=$("#inc"), decB=$("#dec"),
-      distR=$("#dist-range"), distV=$("#distv");
+      distR=$("#dist-range"), distV=$("#distv"), customBox=$("#customBox");
 
-let PANEL=null, SYSTEMS=[], current=null, count=2, dist=5;
+let PANEL=null, SYSTEMS=[], STORE={}, current=null, count=2, dist=5;
+
+const CUSTOM_ID = "custom";
+
+/* store: fallback se data.json non li porta */
+const STORE_DEFAULT = {
+  panelKitUrl:"https://dinamotech.it/products/pannelli-fotovoltaici-flessibili-ultraleggeri-440-w-2x220-w",
+  panelsPerKit:2,
+  cablesUrl:"https://www.amazon.it/shop/dinamotech",
+  mc4SplitterUrl:"https://www.amazon.it/shop/dinamotech"
+};
 
 /* brand → colore del tag (così data.json non deve contenere CSS) */
 const BRAND_COLOR = { "Anker":"var(--anker)", "EcoFlow":"var(--ecoflow)" };
@@ -193,6 +230,7 @@ const perMPPT  = s => s.maxSeries * s.maxParallel;
 const maxTotal = s => perMPPT(s) * s.inputs;
 const note = (kind,ic,txt)=>`<div class="note ${kind}"><span class="ic">${ic}</span><div>${txt}</div></div>`;
 const num  = x => String(x).replace('.',',');
+const esc  = u => String(u).replace(/"/g,'&quot;');
 
 /* comunica al parent l'altezza del contenuto, per l'auto-resize dell'iframe */
 function postHeight(){
@@ -200,6 +238,24 @@ function postHeight(){
     const h = Math.ceil(document.documentElement.getBoundingClientRect().height);
     parent.postMessage({ type:"dt-configuratore-height", height:h }, "*");
   }catch(e){}
+}
+
+/* legge un numero da un campo, accettando anche la virgola */
+function numField(id){ const v=String($(id).value||"").replace(',','.').trim(); const n=parseFloat(v); return isNaN(n)?null:n; }
+
+/* costruisce un "sistema" sintetico dai dati inseriti per un inverter di terze parti */
+function buildCustom(){
+  const inputs = Math.max(1, Math.min(12, Math.floor(numField("#c-inputs")||4)));
+  const vmax   = Math.max(1, numField("#c-vmax")||0);
+  const imax   = Math.max(0, numField("#c-imax")||0);
+  const startup= numField("#c-startup");
+  const maxSeries   = Math.max(1, Math.floor(vmax / PANEL.voc));
+  const maxParallel = imax>0 ? Math.max(1, Math.floor(imax / PANEL.isc)) : 1;
+  const s = { id:CUSTOM_ID, brand:"Altro", name:"Inverter personalizzato", color:"var(--ink)",
+              inputs, maxSeries, maxParallel, vmax, note:"custom",
+              _imax:imax, _noCurrent:!(imax>0), _voExceeds:(PANEL.voc>vmax) };
+  if(startup && startup>0){ s.startup=startup; if(startup>PANEL.voc) s.minSeries=2; }
+  return s;
 }
 
 /* distribuisce n pannelli sugli ingressi MPPT → [{k, ser, par}] per ingresso usato */
@@ -268,8 +324,39 @@ function render(){
       <div class="note warn" style="margin-top:10px"><span class="ic">!</span><div>Usa solo <b>cavo solare H1Z2Z2-K</b> (doppio isolamento, resistente a raggi UV, calore e intemperie). Mai cavo elettrico normale.</div></div>
     </div>`;
 
+  /* --- lista d'acquisto (link store) --- */
+  const ppk = STORE.panelsPerKit || 2;
+  const kits = Math.ceil(count / ppk);
+  const spare = (kits*ppk) - count; // pannelli del kit che restano di scorta
+  const buy = [];
+  buy.push(`<a class="buyrow" href="${esc(STORE.panelKitUrl)}" target="_blank" rel="noopener">
+      <span class="bi" aria-hidden="true">▣</span>
+      <span class="bt"><b>${kits} ${kits===1?'kit':'kit'} da 2×220&nbsp;W</b> di pannelli<small>${count} ${count===1?'pannello':'pannelli'}${spare>0?` · 1 pannello del kit resta di scorta`:''}</small></span>
+      <span class="bgo">Vai ai pannelli →</span>
+    </a>`);
+  buy.push(`<a class="buyrow" href="${esc(STORE.cablesUrl)}" target="_blank" rel="noopener">
+      <span class="bi" aria-hidden="true">〜</span>
+      <span class="bt"><b>Cavo solare H1Z2Z2-K e staffe</b><small>sezione ${sec} · sullo store Amazon DinamoTech</small></span>
+      <span class="bgo">Apri Amazon →</span>
+    </a>`);
+  if(hasPar)
+    buy.push(`<a class="buyrow" href="${esc(STORE.mc4SplitterUrl)}" target="_blank" rel="noopener">
+      <span class="bi" aria-hidden="true">Y</span>
+      <span class="bt"><b>Sdoppiatore MC4 a Y</b><small>serve per collegare le stringhe in parallelo</small></span>
+      <span class="bgo">Apri Amazon →</span>
+    </a>`);
+  const buylist = `<p class="how">La tua lista d'acquisto</p><div class="buylist">${buy.join("")}</div>`;
+
+  /* --- note --- */
   const vSeriesMax = num((s.maxSeries*PANEL.voc).toFixed(1));
   let notes="";
+  if(s.note==="custom"){
+    notes+=note("info","i",`<b>Calcolo sui dati che hai inserito.</b> ${s.inputs} ingressi MPPT · max ${num(s.vmax)}&nbsp;V per ingresso${s._noCurrent?"":` · max ${num(s._imax)}&nbsp;A per ingresso`}. Verifica sempre la scheda tecnica del tuo inverter prima del collegamento.`);
+    if(s._voExceeds)
+      notes+=note("warn","!",`La tensione max che hai inserito (${num(s.vmax)}&nbsp;V) è <b>sotto</b> la Voc di un singolo pannello (${num(PANEL.voc)}&nbsp;V): controlla il dato, così non colleghi nemmeno un pannello.`);
+    if(s._noCurrent)
+      notes+=note("info","i",`Non hai inserito la corrente max per ingresso: prudenzialmente calcolo <b>1 stringa per ingresso</b> (nessun parallelo). Inseriscila per sapere quante stringhe puoi mettere in parallelo.`);
+  }
   notes+=note("info","i",`<b>Perché al massimo ${s.maxSeries} in serie?</b> ${s.maxSeries} pannelli in serie arrivano a ~${vSeriesMax}&nbsp;V a vuoto, appena sotto il limite di <b>${s.vmax}&nbsp;V</b> degli ingressi. Uno in più lo supererebbe.`);
   if(P>1)
     notes+=note("info","i",`<b>Perché fino a ${P} in parallelo?</b> Più stringhe sommano la corrente: ${P} è il massimo che resta entro il limite dell'ingresso di questo sistema.`);
@@ -281,6 +368,8 @@ function render(){
     notes+=note("warn","!",`Il manuale della STREAM 5000 sconsiglia genericamente la serie (pensata per pannelli ad alta tensione): con questi pannelli, ${s.maxSeries} in serie restano sotto i ${s.vmax}&nbsp;V. Attenzione però: un <b>singolo</b> pannello (Voc ${num(PANEL.voc)}&nbsp;V) è sotto i <b>${s.startup}&nbsp;V di avvio dell'MPPT</b> — collegane almeno 2 in serie per avviarlo senza problemi.`);
     notes+=note("warn","!",`Con <b>3 stringhe in parallelo</b> la corrente si avvicina al limite dell'ingresso: si consiglia di proteggere ogni ingresso con un <b>sezionatore o un fusibile</b> con amperaggio coerente con i limiti della STREAM 5000.`);
   }
+  if(s.note==="custom" && s.minSeries>1 && s.startup)
+    notes+=note("warn","!",`Hai indicato una tensione di avvio MPPT di <b>${num(s.startup)}&nbsp;V</b>: un <b>singolo</b> pannello (Voc ${num(PANEL.voc)}&nbsp;V) non basta ad avviarlo — il tool raggruppa sempre almeno 2 pannelli in serie.`);
   if(hasPar)
     notes+=note("info","Y",`Per il <b>parallelo</b> serve un cavo a Y (sdoppiatore MC4): unisci i poli <b>+</b> tra loro e i <b>−</b> tra loro.`);
   notes+=note("info","i",`In Italia un impianto plug&nbsp;&&nbsp;play immette in rete <b>max 800&nbsp;W</b>: è il sistema a limitarlo. Puoi installare più Watt di pannelli — l'extra rende di più con poca luce.`);
@@ -290,7 +379,7 @@ function render(){
       <span class="badge" aria-hidden="true">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 5"/></svg>
       </span>
-      <h2>Compatibile</h2>
+      <h2>${s.id===CUSTOM_ID ? 'Configurazione' : 'Compatibile'}</h2>
       <span class="brandtag" style="background:${s.color}">${s.brand}</span>
     </div>
 
@@ -309,12 +398,26 @@ function render(){
     <ol class="steps">${steps.map(t=>`<li>${t}</li>`).join("")}</ol>
 
     ${cable}
+    ${buylist}
     ${notes}
 
     <p class="basis">Calcolo sul pannello DinamoTech ${PANEL.w}&nbsp;W — Vmp ${num(PANEL.vmp)}&nbsp;V · Voc ${num(PANEL.voc)}&nbsp;V · Isc ${num(PANEL.isc)}&nbsp;A · MC4. Serie max ${s.maxSeries} (≤${s.vmax}&nbsp;V); parallelo limitato dalla corrente dell'ingresso.</p>
   `;
 
   postHeight();
+}
+
+/* seleziona il sistema corrente in base al valore del select */
+function selectSystem(id){
+  if(id===CUSTOM_ID){
+    customBox.hidden=false;
+    current=buildCustom();
+  }else{
+    customBox.hidden=true;
+    current=SYSTEMS.find(x=>x.id===id) || SYSTEMS[0];
+  }
+  count=Math.min(count,maxTotal(current));
+  render();
 }
 
 /* ---- bootstrap: carica data.json, poi avvia ---- */
@@ -325,6 +428,7 @@ async function init(){
     if(!res.ok) throw new Error("HTTP "+res.status);
     const data = await res.json();
     PANEL   = data.panel;
+    STORE   = Object.assign({}, STORE_DEFAULT, data.store||{});
     SYSTEMS = (data.systems||[]).map(s=>({ ...s, color: s.color || BRAND_COLOR[s.brand] || "var(--ink)" }));
     if(!PANEL || !SYSTEMS.length) throw new Error("data.json incompleto o vuoto");
   }catch(err){
@@ -336,13 +440,21 @@ async function init(){
   }
 
   SYSTEMS.forEach(s=>{ const o=document.createElement("option"); o.value=s.id; o.textContent=`${s.brand} · ${s.name}`; sysSel.appendChild(o); });
-  current = SYSTEMS.find(s=>s.id==="sb3") || SYSTEMS[0];
-  sysSel.value = current.id;
+  const optC=document.createElement("option"); optC.value=CUSTOM_ID; optC.textContent="🔧 Altro inverter — inserisci i tuoi dati"; sysSel.appendChild(optC);
 
-  sysSel.addEventListener("change",e=>{ current=SYSTEMS.find(x=>x.id===e.target.value); count=Math.min(count,maxTotal(current)); render(); });
+  const def = SYSTEMS.find(s=>s.id==="sb3") || SYSTEMS[0];
+  sysSel.value = def.id;
+  current = def;
+
+  sysSel.addEventListener("change",e=>selectSystem(e.target.value));
   incB.addEventListener("click",()=>{ count++; render(); });
   decB.addEventListener("click",()=>{ count--; render(); });
   distR.addEventListener("input",e=>{ dist=+e.target.value; distV.textContent=dist; render(); });
+  // ricalcolo live dei dati inverter personalizzato
+  ["#c-inputs","#c-vmax","#c-imax","#c-startup"].forEach(id=>{
+    $(id).addEventListener("input",()=>{ if(sysSel.value===CUSTOM_ID){ current=buildCustom(); count=Math.min(count,maxTotal(current)); render(); } });
+  });
+
   render();
 }
 
