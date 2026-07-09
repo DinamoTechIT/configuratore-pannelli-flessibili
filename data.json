@@ -1,7 +1,13 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-27",
+  "updatedAt": "2026-07-09",
   "source": "manuale (sostituibile da Make + Airtable)",
+  "store": {
+    "panelKitUrl": "https://dinamotech.it/products/pannelli-fotovoltaici-flessibili-ultraleggeri-440-w-2x220-w",
+    "panelsPerKit": 2,
+    "cablesUrl": "https://www.amazon.it/shop/dinamotech",
+    "mc4SplitterUrl": "https://www.amazon.it/shop/dinamotech"
+  },
   "panel": {
     "model": "SAT-220-F8MH",
     "w": 220,

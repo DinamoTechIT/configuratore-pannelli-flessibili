@@ -51,11 +51,27 @@ Custom Liquid/HTML, Notion embed, ecc.):
 Se la piattaforma non consente di aggiungere lo `<script>` (alcuni embed di
 Notion), usa un'altezza fissa di fallback: `style="width:100%;height:1400px;border:0"`.
 
+## Funzioni
+
+- **Sistemi predefiniti** + verdetto di compatibilità, schema di collegamento
+  (serie/parallelo per ingresso MPPT), sezione cavo per distanza.
+- **Lista d'acquisto dinamica**: in base alla configurazione mostra i link a
+  kit pannelli (con quantità di kit da 2×220 W), cavo/staffe (Amazon DinamoTech)
+  e sdoppiatore MC4 a Y (solo quando serve il parallelo). Gli URL sono in
+  `data.json` → `store`.
+- **Inverter di terze parti**: voce "🔧 Altro inverter" nel menu. L'utente
+  inserisce n° ingressi MPPT, tensione max ingresso, corrente max ingresso e
+  (opzionale) tensione di avvio MPPT; il tool calcola serie/parallelo e il
+  numero esatto di pannelli con la stessa logica dei sistemi predefiniti
+  (`maxSeries = floor(vmax/Voc)`, `maxParallel = floor(Imax/Isc)`).
+
 ## Aggiornare i dati
 
 - **Aggiungere/modificare un sistema:** edita `data.json` (campo `systems`). Campi:
   `inputs` (n. ingressi MPPT), `maxSeries`, `maxParallel`, `vmax`, opz. `startup`
   e `minSeries`, `note` (chiave della nota testuale).
+- **Link store:** edita `data.json` → `store` (`panelKitUrl`, `panelsPerKit`,
+  `cablesUrl`, `mc4SplitterUrl`). Nessuna modifica all'HTML.
 - **Brand nuovo:** aggiungi il colore del tag alla mappa `BRAND_COLOR` in `index.html`.
 - **Cambiare pannello:** edita `data.json` → `panel` e **ricontrolla** `maxSeries`
   = `floor(vmax / Voc)` (con Voc 19,26 V e 60 V resta 3) e i limiti di parallelo (Isc).
