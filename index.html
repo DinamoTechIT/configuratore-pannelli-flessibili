@@ -290,7 +290,7 @@ function postHeight(){
 function svgWiring(lens){
   const par=lens.length, maxSer=Math.max(...lens);
   const PW=36,PH=50,GAP=10,ROWH=70,topPad=20,px0=24;
-  const busX = px0 + maxSer*(PW+GAP) - GAP + 26, busX2 = busX + 16;
+  const busX = px0 + maxSer*(PW+GAP) - GAP + 30, busX2 = busX + 16;
   const portW=64, portH=30, portX = busX2 + 20;
   const W = portX + portW + 6;
   const H = topPad + (par-1)*ROWH + PH + 16;
@@ -298,12 +298,12 @@ function svgWiring(lens){
   const cy = par===1 ? topPad + PH/2 - 6 : Math.round(H/2);
   const RED="#D93025", BLK="#3a3d44";
   let g="";
-  const yTops=[], yMids=[];
+  const yTops=[], yMids=[], rowRs=[];
   for(let r=0;r<par;r++){
     const ser=lens[r];
     const y = topPad + r*ROWH, ym = y + PH/2, yt = y - 7;
     yTops.push(yt); yMids.push(ym);
-    const rowR = px0 + ser*(PW+GAP) - GAP; // bordo destro dell'ultima colonna di questa stringa
+    const rowR = px0 + ser*(PW+GAP) - GAP; rowRs.push(rowR);
     for(let i=0;i<ser;i++){
       const x = px0 + i*(PW+GAP);
       g+=`<rect x="${x}" y="${y}" width="${PW}" height="${PH}" rx="4" fill="#1b1c20" stroke="#000"/>`;
@@ -314,23 +314,29 @@ function svgWiring(lens){
         g+=`<circle cx="${x+PW}" cy="${ym}" r="2.6" fill="${BLK}"/><circle cx="${x+PW+GAP}" cy="${ym}" r="2.6" fill="${BLK}"/>`;
       }
     }
-    // polo + (rosso): dal primo pannello, sale sopra la stringa e va verso il bus
-    g+=`<polyline points="${px0},${ym} 14,${ym} 14,${yt} ${busX},${yt}" fill="none" stroke="${RED}" stroke-width="2.5"/>`;
-    // polo − (nero): dall'ultimo pannello dritto al bus
-    g+=`<line x1="${rowR}" y1="${ym}" x2="${busX2}" y2="${ym}" stroke="${BLK}" stroke-width="2.5"/>`;
-    if(par>1){ g+=`<circle cx="${busX}" cy="${yt}" r="3" fill="${RED}"/><circle cx="${busX2}" cy="${ym}" r="3" fill="${BLK}"/>`; }
   }
-  // bus verticali fino all'ingresso
-  const rY1=Math.min(...yTops,cy-6), rY2=Math.max(...yTops,cy-6);
-  const bY1=Math.min(...yMids,cy+6), bY2=Math.max(...yMids,cy+6);
-  g+=`<line x1="${busX}" y1="${rY1}" x2="${busX}" y2="${rY2}" stroke="${RED}" stroke-width="2.5"/>`;
-  g+=`<line x1="${busX2}" y1="${bY1}" x2="${busX2}" y2="${bY2}" stroke="${BLK}" stroke-width="2.5"/>`;
-  g+=`<line x1="${busX}" y1="${cy-6}" x2="${portX}" y2="${cy-6}" stroke="${RED}" stroke-width="2.5"/>`;
-  g+=`<line x1="${busX2}" y1="${cy+6}" x2="${portX}" y2="${cy+6}" stroke="${BLK}" stroke-width="2.5"/>`;
-  if(par>1){ // le due Y alla stessa altezza: centro verticale esatto tra le stringhe
-    const yc = topPad + ((par-1)*ROWH + PH)/2;
-    g+=`<circle cx="${busX}" cy="${yc}" r="6" fill="#87CB28"/><text x="${busX}" y="${yc+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
-    g+=`<circle cx="${busX2}" cy="${yc}" r="6" fill="#87CB28"/><text x="${busX2}" y="${yc+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
+  if(par===1){
+    const ym=yMids[0], yt=yTops[0];
+    g+=`<polyline points="${px0},${ym} 14,${ym} 14,${yt} ${busX},${yt}" fill="none" stroke="${RED}" stroke-width="2.5"/>`;
+    g+=`<polyline points="${busX},${yt} ${busX},${cy-6} ${portX},${cy-6}" fill="none" stroke="${RED}" stroke-width="2.5"/>`;
+    g+=`<line x1="${rowRs[0]}" y1="${ym}" x2="${portX}" y2="${ym}" stroke="${BLK}" stroke-width="2.5"/>`;
+  }else{
+    // nodi Y: i fili delle stringhe convergono in diagonale nel punto di unione
+    // (a metà tra 2 stringhe; sull'intersezione centrale con 3)
+    const ycr=(yTops[0]+yTops[par-1])/2, ycm=(yMids[0]+yMids[par-1])/2;
+    for(let r=0;r<par;r++){
+      const yt=yTops[r], ym=yMids[r];
+      // + rosso: dal primo pannello, sopra la stringa, poi diagonale verso il nodo Y
+      g+=`<polyline points="${px0},${ym} 14,${ym} 14,${yt} ${busX-14},${yt} ${busX},${ycr}" fill="none" stroke="${RED}" stroke-width="2.5"/>`;
+      // − nero: dall'ultimo pannello, poi diagonale verso il nodo Y
+      g+=`<polyline points="${rowRs[r]},${ym} ${busX2-14},${ym} ${busX2},${ycm}" fill="none" stroke="${BLK}" stroke-width="2.5"/>`;
+    }
+    // dai nodi Y all'ingresso
+    g+=`<polyline points="${busX},${ycr} ${busX},${cy-6} ${portX},${cy-6}" fill="none" stroke="${RED}" stroke-width="2.5"/>`;
+    g+=`<polyline points="${busX2},${ycm} ${busX2},${cy+6} ${portX},${cy+6}" fill="none" stroke="${BLK}" stroke-width="2.5"/>`;
+    // connettori Y esattamente sui punti di unione
+    g+=`<circle cx="${busX}" cy="${ycr}" r="6" fill="#87CB28"/><text x="${busX}" y="${ycr+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
+    g+=`<circle cx="${busX2}" cy="${ycm}" r="6" fill="#87CB28"/><text x="${busX2}" y="${ycm+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
   }
   // etichette polarità
   g+=`<text x="${px0+3}" y="${topPad-9}" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="${RED}">+</text>`;
