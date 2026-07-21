@@ -455,14 +455,6 @@ function render(){
     return `<div class="wireblock">${svgWiring(c.g.lens)}<div class="wirecap">${cap}</div></div>`;
   }).join("");
 
-  const steps=[
-    `<b>In serie</b> (per alzare la tensione): collega il <b>+</b> di un pannello al <b>−</b> del successivo, fino a <b>${s.maxSeries}</b> pannelli per stringa.`,
-    P>1
-      ? `<b>In parallelo</b> (per aggiungere potenza): unisci più stringhe con un cavo a Y — <b>+</b> con <b>+</b>, <b>−</b> con <b>−</b> — fino a <b>${P}</b> per ingresso.`
-      : `Su questo sistema, <b>una sola stringa per ingresso</b>: due in parallelo supererebbero la corrente massima.`,
-    `Porta ogni stringa a un ingresso MPPT. Hai <b>${s.inputs} ingressi</b>.`,
-  ];
-
   const sec=cableSection(dist);
   const cable=`
     <p class="how">Il cavo che ti serve</p>
@@ -515,7 +507,7 @@ function render(){
       <span class="bgo">Apri Amazon →</span>
     </a>`);
   }
-  const buylist = `<p class="how">La tua lista d'acquisto</p><div class="buylist">${buy.join("")}</div>`;
+  const buylist = `<p class="how">La tua lista della spesa</p><div class="buylist">${buy.join("")}</div>`;
 
   /* --- note --- */
   const vSeriesMax = num((s.maxSeries*PANEL.voc).toFixed(1));
@@ -544,7 +536,7 @@ function render(){
     notes+=note("warn","!",`I pannelli collegati <b>in serie</b> devono avere lo <b>stesso orientamento</b> ed essere esposti alla stessa luce: se uno è in ombra o montato al contrario, limita l'intera stringa.`);
   if(hasPar)
     notes+=note("info","Y",`Per il <b>parallelo</b> serve un cavo a Y (sdoppiatore MC4): unisci i poli <b>+</b> tra loro e i <b>−</b> tra loro.`);
-  notes+=note("info","i",`In Italia un impianto plug&nbsp;&&nbsp;play immette in rete <b>max 800&nbsp;W</b>: è il sistema a limitarlo. Puoi installare più Watt di pannelli — l'extra rende di più con poca luce.`);
+  notes+=vlink(vid("serieParallelo"));
 
   $("#result").innerHTML=`
     <div class="verdict">
@@ -558,10 +550,6 @@ function render(){
     <p class="how">La tua configurazione · ${count} ${count===1?'pannello':'pannelli'} (${totW}&nbsp;W di picco)</p>
     <div class="map">${rows}</div>
     ${wiring}
-
-    <p class="how">Come collegarli</p>
-    <ol class="steps">${steps.map(t=>`<li>${t}</li>`).join("")}</ol>
-    ${vlink(vid("serieParallelo"))}
 
     ${cable}
     ${buylist}
@@ -577,17 +565,18 @@ function render(){
   postHeight();
 }
 
-/* card "Video di approfondimento" (statica, da data.json) */
+/* card "Guide e approfondimenti" (statica, da data.json → videos con featured:true) */
 function renderVideos(){
-  if(!VIDEOS.length){ videosEl.hidden=true; return; }
+  const shown = VIDEOS.filter(v=>v.featured);
+  if(!shown.length){ videosEl.hidden=true; return; }
   videosEl.hidden=false;
   videosEl.innerHTML =
-    `<p class="how" style="margin:0 0 12px">Video di approfondimento</p>
-     <div class="buylist">${VIDEOS.map(v=>`
+    `<p class="how" style="margin:0 0 12px">Guide e approfondimenti</p>
+     <div class="buylist">${shown.map(v=>`
        <a class="buyrow" href="${esc(v.url)}" target="_blank" rel="noopener">
-         <span class="bi" aria-hidden="true">▶</span>
+         <span class="bi" aria-hidden="true">${v.type==="guide"?"📖":"▶"}</span>
          <span class="bt"><b>${v.label}</b></span>
-         <span class="bgo">Guarda →</span>
+         <span class="bgo">${v.type==="guide"?"Leggi":"Guarda"} →</span>
        </a>`).join("")}</div>`;
 }
 

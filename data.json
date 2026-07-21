@@ -31,7 +31,8 @@
       "inputs": 4, "maxSeries": 3, "maxParallel": 3, "vmax": 60, "startup": 20, "minSeries": 2, "note": "stream5000" }
   ],
   "videos": [
-    { "id": "pannelli", "label": "Guida ai pannelli flessibili", "url": "https://youtu.be/pmRFJQc9gNo" },
+    { "id": "pannelli", "label": "Guida di approfondimento ai pannelli ultraleggeri", "url": "https://youtu.be/pmRFJQc9gNo", "featured": true },
+    { "id": "guidaMiniFV", "label": "Guida definitiva al mini fotovoltaico plug & play", "url": "https://dinamotech.notion.site/Guida-Definitiva-Mini-Fotovoltaico-Plug-Play-187d752a9bc080318c9cfabb775d79ae", "featured": true, "type": "guide" },
     { "id": "prolunghe", "label": "Come realizzare prolunghe fotovoltaiche", "url": "https://youtu.be/UhfqX_98vnA" },
     { "id": "serieParallelo", "label": "Compatibilità pannelli/inverter: serie e parallelo", "url": "https://youtu.be/7VhlgCiJMuo" }
   ]
