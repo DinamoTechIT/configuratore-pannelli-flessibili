@@ -31,8 +31,8 @@
       "inputs": 4, "maxSeries": 3, "maxParallel": 3, "vmax": 60, "startup": 20, "minSeries": 2, "note": "stream5000" }
   ],
   "videos": [
-    { "label": "Guida ai pannelli flessibili", "url": "https://youtu.be/pmRFJQc9gNo" },
-    { "label": "Come realizzare prolunghe fotovoltaiche", "url": "https://youtu.be/UhfqX_98vnA" },
-    { "label": "Compatibilità pannelli/inverter: serie e parallelo", "url": "https://youtu.be/7VhlgCiJMuo" }
+    { "id": "pannelli", "label": "Guida ai pannelli flessibili", "url": "https://youtu.be/pmRFJQc9gNo" },
+    { "id": "prolunghe", "label": "Come realizzare prolunghe fotovoltaiche", "url": "https://youtu.be/UhfqX_98vnA" },
+    { "id": "serieParallelo", "label": "Compatibilità pannelli/inverter: serie e parallelo", "url": "https://youtu.be/7VhlgCiJMuo" }
   ]
 }
