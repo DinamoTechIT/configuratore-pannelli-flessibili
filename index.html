@@ -338,9 +338,9 @@ function svgWiring(lens){
     g+=`<circle cx="${busX}" cy="${ycr}" r="6" fill="#87CB28"/><text x="${busX}" y="${ycr+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
     g+=`<circle cx="${busX2}" cy="${ycm}" r="6" fill="#87CB28"/><text x="${busX2}" y="${ycm+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
   }
-  // etichette polarità
+  // etichette polarità: + sul cavo rosso (sopra la prima stringa), − sul cavo nero
   g+=`<text x="${px0+3}" y="${topPad-9}" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="${RED}">+</text>`;
-  g+=`<text x="${px0+maxSer*(PW+GAP)-GAP-9}" y="${topPad-9}" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="${BLK}">−</text>`;
+  g+=`<text x="${rowRs[0]+7}" y="${yMids[0]-7}" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="${BLK}">−</text>`;
   // ingresso MPPT
   g+=`<rect x="${portX}" y="${cy-portH/2}" width="${portW}" height="${portH}" rx="8" fill="#242833"/>`;
   g+=`<circle cx="${portX+13}" cy="${cy}" r="4" fill="#87CB28"/>`;
