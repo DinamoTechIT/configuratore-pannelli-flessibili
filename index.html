@@ -199,7 +199,6 @@
         <line x1="18" y1="18" x2="232" y2="18" stroke="#D93025" stroke-width="2.5"/>
         <polygon points="12,18 22,13 22,23" fill="#D93025"/>
         <polygon points="238,18 228,13 228,23" fill="#D93025"/>
-        <text x="125" y="9" text-anchor="middle" font-family="Inter,sans-serif" font-size="10.5" font-weight="600" fill="#D93025">misura da parete a parete</text>
       </svg>
       <div class="brow">
         <input id="balcony" type="text" inputmode="decimal" placeholder="es. 4,5" aria-label="Lunghezza del balcone in metri">
@@ -288,10 +287,10 @@ function postHeight(){
 /* --- illustrazioni SVG (inline, nessuna immagine esterna) --- */
 
 /* schema stilizzato di un ingresso: ser pannelli in serie × par stringhe in parallelo */
-function svgWiring(ser,par){
+function svgWiring(lens){
+  const par=lens.length, maxSer=Math.max(...lens);
   const PW=36,PH=50,GAP=10,ROWH=70,topPad=20,px0=24;
-  const stringsR = px0 + ser*(PW+GAP) - GAP;    // bordo destro dei pannelli
-  const busX = stringsR + 26, busX2 = busX + 16;
+  const busX = px0 + maxSer*(PW+GAP) - GAP + 26, busX2 = busX + 16;
   const portW=64, portH=30, portX = busX2 + 20;
   const W = portX + portW + 6;
   const H = topPad + (par-1)*ROWH + PH + 16;
@@ -301,8 +300,10 @@ function svgWiring(ser,par){
   let g="";
   const yTops=[], yMids=[];
   for(let r=0;r<par;r++){
+    const ser=lens[r];
     const y = topPad + r*ROWH, ym = y + PH/2, yt = y - 7;
     yTops.push(yt); yMids.push(ym);
+    const rowR = px0 + ser*(PW+GAP) - GAP; // bordo destro dell'ultima colonna di questa stringa
     for(let i=0;i<ser;i++){
       const x = px0 + i*(PW+GAP);
       g+=`<rect x="${x}" y="${y}" width="${PW}" height="${PH}" rx="4" fill="#1b1c20" stroke="#000"/>`;
@@ -316,7 +317,7 @@ function svgWiring(ser,par){
     // polo + (rosso): dal primo pannello, sale sopra la stringa e va verso il bus
     g+=`<polyline points="${px0},${ym} 14,${ym} 14,${yt} ${busX},${yt}" fill="none" stroke="${RED}" stroke-width="2.5"/>`;
     // polo − (nero): dall'ultimo pannello dritto al bus
-    g+=`<line x1="${stringsR}" y1="${ym}" x2="${busX2}" y2="${ym}" stroke="${BLK}" stroke-width="2.5"/>`;
+    g+=`<line x1="${rowR}" y1="${ym}" x2="${busX2}" y2="${ym}" stroke="${BLK}" stroke-width="2.5"/>`;
     if(par>1){ g+=`<circle cx="${busX}" cy="${yt}" r="3" fill="${RED}"/><circle cx="${busX2}" cy="${ym}" r="3" fill="${BLK}"/>`; }
   }
   // bus verticali fino all'ingresso
@@ -326,13 +327,14 @@ function svgWiring(ser,par){
   g+=`<line x1="${busX2}" y1="${bY1}" x2="${busX2}" y2="${bY2}" stroke="${BLK}" stroke-width="2.5"/>`;
   g+=`<line x1="${busX}" y1="${cy-6}" x2="${portX}" y2="${cy-6}" stroke="${RED}" stroke-width="2.5"/>`;
   g+=`<line x1="${busX2}" y1="${cy+6}" x2="${portX}" y2="${cy+6}" stroke="${BLK}" stroke-width="2.5"/>`;
-  if(par>1){ // il punto di unione è lo sdoppiatore a Y
-    g+=`<circle cx="${busX}" cy="${cy-6}" r="6" fill="#87CB28"/><text x="${busX}" y="${cy-3.2}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
-    g+=`<circle cx="${busX2}" cy="${cy+6}" r="6" fill="#87CB28"/><text x="${busX2}" y="${cy+8.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
+  if(par>1){ // lo sdoppiatore a Y sta esattamente al centro del punto di unione delle stringhe
+    const ycr=(yTops[0]+yTops[par-1])/2, ycm=(yMids[0]+yMids[par-1])/2;
+    g+=`<circle cx="${busX}" cy="${ycr}" r="6" fill="#87CB28"/><text x="${busX}" y="${ycr+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
+    g+=`<circle cx="${busX2}" cy="${ycm}" r="6" fill="#87CB28"/><text x="${busX2}" y="${ycm+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
   }
   // etichette polarità
   g+=`<text x="${px0+3}" y="${topPad-9}" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="${RED}">+</text>`;
-  g+=`<text x="${stringsR-9}" y="${topPad-9}" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="${BLK}">−</text>`;
+  g+=`<text x="${px0+maxSer*(PW+GAP)-GAP-9}" y="${topPad-9}" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="${BLK}">−</text>`;
   // ingresso MPPT
   g+=`<rect x="${portX}" y="${cy-portH/2}" width="${portW}" height="${portH}" rx="8" fill="#242833"/>`;
   g+=`<circle cx="${portX+13}" cy="${cy}" r="4" fill="#87CB28"/>`;
@@ -382,13 +384,20 @@ function arrange(s,n){
     const mUsed=Math.min(M, nStrings);
     const buckets=Array.from({length:mUsed},()=>[]);
     lens.forEach((L,idx)=>buckets[idx%mUsed].push(L));
-    return buckets.map(ls=>({ k:ls.reduce((a,b)=>a+b,0), ser:Math.max(...ls), par:ls.length }));
+    return buckets.map(ls=>{ const sorted=ls.slice().sort((a,b)=>b-a);
+      return { k:ls.reduce((a,b)=>a+b,0), ser:Math.max(...ls), par:ls.length, lens:sorted }; });
   }
 
   const mUsed=Math.min(M,n);
   const groups=[]; let left=n;
   for(let i=0;i<mUsed;i++){ const k=Math.ceil(left/(mUsed-i)); left-=k; groups.push(k); }
-  return groups.map(k=>{ const par=Math.min(P,Math.ceil(k/S)); return {k, ser:Math.ceil(k/par), par}; });
+  return groups.map(k=>{
+    const par=Math.min(P,Math.ceil(k/S));
+    // lunghezze reali delle stringhe: es. 8 pannelli su 3 stringhe → 3+3+2
+    const base=Math.floor(k/par), rem=k%par;
+    const lens=[]; for(let i=0;i<par;i++) lens.push(base+(i<rem?1:0));
+    return {k, ser:Math.max(...lens), par, lens};
+  });
 }
 
 function render(){
@@ -403,29 +412,34 @@ function render(){
   const hasPar=arr.some(g=>g.par>1);
   const hasSeries=arr.some(g=>g.ser>1);
 
+  /* descrive un ingresso partendo dalle lunghezze reali delle stringhe */
+  function descLens(g){
+    const allEq=g.lens.every(L=>L===g.lens[0]);
+    if(g.k===1) return "1 pannello";
+    if(g.par===1) return `${g.ser} in serie`;
+    if(allEq && g.ser===1) return `${g.par} in parallelo`;
+    if(allEq) return `${g.ser} in serie × ${g.par} in parallelo`;
+    const cnt={}; g.lens.forEach(L=>cnt[L]=(cnt[L]||0)+1);
+    const parts=Object.keys(cnt).map(Number).sort((a,b)=>b-a)
+      .map(L=>`${cnt[L]} ${cnt[L]===1?"stringa":"stringhe"} da ${L}`);
+    return parts.join(" + ")+" in parallelo";
+  }
+
   const rows=arr.map((g,i)=>{
-    let desc;
-    if(g.k===1) desc="1 pannello";
-    else if(g.par===1) desc=`${g.ser} in serie`;
-    else if(g.ser===1) desc=`${g.par} in parallelo`;
-    else desc=`${g.ser} in serie × ${g.par} in parallelo`;
+    const desc=descLens(g);
     return `<div class="inp">
         <div class="port"><span class="dot"></span>Ingresso ${i+1}</div>
         <span class="mode-tag">${desc} · <b>${g.k} ${g.k===1?'pannello':'pannelli'}</b></span>
       </div>`;
   }).join("");
 
-  /* schema di collegamento: un disegno per ogni combinazione serie×parallelo usata */
+  /* schema di collegamento: un disegno per ogni combinazione reale di stringhe usata */
   const combos={};
-  arr.forEach(g=>{ const key=g.ser+"x"+g.par; (combos[key]=combos[key]||{ser:g.ser,par:g.par,n:0}).n++; });
+  arr.forEach(g=>{ const key=g.lens.join("+"); (combos[key]=combos[key]||{g,n:0}).n++; });
   const wiring = Object.values(combos).map(c=>{
-    let cap;
-    if(c.ser===1&&c.par===1) cap="1 pannello collegato diretto";
-    else if(c.par===1) cap=`${c.ser} pannelli in serie`;
-    else if(c.ser===1) cap=`${c.par} stringhe in parallelo`;
-    else cap=`${c.ser} in serie × ${c.par} in parallelo`;
-    cap+=` · così su ${c.n} ${c.n===1?"ingresso":"ingressi"}`;
-    return `<div class="wireblock">${svgWiring(c.ser,c.par)}<div class="wirecap">${cap}</div></div>`;
+    const cap = (c.g.k===1 ? "1 pannello collegato diretto" : descLens(c.g))
+      + ` · così su ${c.n} ${c.n===1?"ingresso":"ingressi"}`;
+    return `<div class="wireblock">${svgWiring(c.g.lens)}<div class="wirecap">${cap}</div></div>`;
   }).join("");
 
   const steps=[
