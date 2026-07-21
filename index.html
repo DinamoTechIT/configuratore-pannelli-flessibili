@@ -547,14 +547,6 @@ function render(){
       <span class="brandtag" style="background:${s.color}">${s.brand}</span>
     </div>
 
-    <p class="how">Capacità per ingresso MPPT</p>
-    <div class="keyline">
-      <div class="stat"><div class="n">fino a ${s.maxSeries}</div><div class="k">in serie / MPPT</div></div>
-      <div class="stat"><div class="n">${P===1?'1':'fino a '+P}</div><div class="k">in parallelo / MPPT</div></div>
-      <div class="stat"><div class="n">${perMPPT(s)}</div><div class="k">pannelli / MPPT</div></div>
-      <div class="stat"><div class="n">${mx}</div><div class="k">totale · ${s.inputs} ingressi MPPT</div></div>
-    </div>
-
     <p class="how">La tua configurazione · ${count} ${count===1?'pannello':'pannelli'} (${totW}&nbsp;W di picco)</p>
     <div class="map">${rows}</div>
     ${wiring}
