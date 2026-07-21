@@ -75,6 +75,9 @@
   .wireblock{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 12px 8px;margin-top:10px;overflow-x:auto}
   .wireblock svg{display:block;max-width:100%;height:auto;margin:0 auto}
   .wirecap{font-size:12px;color:var(--ink-soft);text-align:center;margin-top:6px}
+  .vlink{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--sun-deep);text-decoration:none;margin-top:10px}
+  .vlink:hover{text-decoration:underline}
+  .vlink .vp{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;background:var(--ink);color:var(--sun);font-size:9px;flex:0 0 auto}
   .blabel{font-size:12.5px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:8px}
   .brow{display:flex;align-items:center;gap:10px}
   .brow input{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:120px}
@@ -269,6 +272,10 @@ function cableSection(d){
   if(d<=15) return "6,0 mm²";
   return "10 mm²";
 }
+
+/* video per id (da data.json → videos) */
+const vid = id => VIDEOS.find(v=>v.id===id);
+const vlink = v => v ? `<a class="vlink" href="${esc(v.url)}" target="_blank" rel="noopener"><span class="vp">▶</span>Guarda il video: ${v.label}</a>` : "";
 
 const perMPPT  = s => s.maxSeries * s.maxParallel;
 const maxTotal = s => perMPPT(s) * s.inputs;
@@ -468,6 +475,7 @@ function render(){
         ? `✓ I due cavi da 3&nbsp;m inclusi nel kit bastano: usali così come sono.`
         : `Oltre i 3&nbsp;m del kit, usa <b>un solo cavo</b> della lunghezza giusta — <b>non</b> più prolunghe MC4 una in fila all'altra: ogni giunzione fa cadere la tensione.` }</div>
       <div class="note warn" style="margin-top:10px"><span class="ic">!</span><div>Usa solo <b>cavo solare H1Z2Z2-K</b> (doppio isolamento, resistente a raggi UV, calore e intemperie). Mai cavo elettrico normale.</div></div>
+      ${vlink(vid("prolunghe"))}
     </div>`;
 
   /* --- lista d'acquisto (link store) --- */
@@ -553,6 +561,7 @@ function render(){
 
     <p class="how">Come collegarli</p>
     <ol class="steps">${steps.map(t=>`<li>${t}</li>`).join("")}</ol>
+    ${vlink(vid("serieParallelo"))}
 
     ${cable}
     ${buylist}
