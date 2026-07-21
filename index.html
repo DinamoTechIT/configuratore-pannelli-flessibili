@@ -70,6 +70,13 @@
   .count small{display:block;font-family:Inter;font-weight:500;font-size:10.5px;color:var(--ink-soft);line-height:1;margin-top:-6px;letter-spacing:.02em}
   .hint{color:var(--ink-soft);font-size:12.5px;margin:10px 0 0}
 
+  .balcony{margin-top:14px;border-top:1px dashed var(--line);padding-top:14px}
+  .blabel{font-size:12.5px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:8px}
+  .brow{display:flex;align-items:center;gap:10px}
+  .brow input{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:120px}
+  .brow input:focus-visible{outline:3px solid var(--sun);outline-offset:1px;border-color:var(--sun)}
+  .brow .u{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:16px;color:var(--ink-soft)}
+
   .dist{display:flex;align-items:center;gap:14px;margin-top:4px}
   .dist input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:999px;background:var(--line);outline:none}
   .dist input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;background:var(--sun);border:3px solid #fff;box-shadow:var(--shadow);cursor:pointer}
@@ -153,11 +160,11 @@
         <label for="c-inputs">Ingressi MPPT
           <input id="c-inputs" type="number" inputmode="numeric" min="1" max="12" step="1" value="4"></label>
         <label for="c-vmax">Tensione max ingresso (V)
-          <input id="c-vmax" type="number" inputmode="decimal" min="1" step="1" value="60"></label>
+          <input id="c-vmax" type="text" inputmode="decimal" value="60"></label>
         <label for="c-imax">Corrente max ingresso (A)
-          <input id="c-imax" type="number" inputmode="decimal" min="0" step="0.1" value="40"></label>
+          <input id="c-imax" type="text" inputmode="decimal" value="40"></label>
         <label for="c-startup">Avvio MPPT (V) <span class="opt">opzionale</span>
-          <input id="c-startup" type="number" inputmode="decimal" min="0" step="1" value="" placeholder="—"></label>
+          <input id="c-startup" type="text" inputmode="decimal" value="" placeholder="—"></label>
       </div>
       <p class="hint">Trovi questi dati nella scheda tecnica del tuo inverter, nella sezione ingressi fotovoltaici / MPPT.</p>
     </div>
@@ -169,6 +176,15 @@
       <button id="inc" type="button" aria-label="Aggiungi un pannello">+</button>
     </div>
     <p class="hint" id="maxhint"></p>
+
+    <div class="balcony">
+      <label class="blabel" for="balcony">Non sai quanti? Calcolalo dalla lunghezza del balcone</label>
+      <div class="brow">
+        <input id="balcony" type="text" inputmode="decimal" placeholder="es. 4,5" aria-label="Lunghezza del balcone in metri">
+        <span class="u">m</span>
+      </div>
+      <p class="hint" id="balconyhint">Ogni pannello è largo 1,14&nbsp;m: conto 1,15&nbsp;m l'uno (1&nbsp;cm d'aria) e arrotondo per difetto.</p>
+    </div>
 
     <label class="label" for="dist-range" style="margin-top:20px"><span class="q-num">3</span>Distanza tra pannelli e accumulo</label>
     <div class="dist">
@@ -204,7 +220,11 @@
 const $ = s => document.querySelector(s);
 const sysSel=$("#sys"), cntEl=$("#cnt"), incB=$("#inc"), decB=$("#dec"),
       distR=$("#dist-range"), distV=$("#distv"), customBox=$("#customBox"),
-      ctaBtn=$("#ctaBtn"), videosEl=$("#videos");
+      ctaBtn=$("#ctaBtn"), videosEl=$("#videos"),
+      balconyEl=$("#balcony"), balconyHint=$("#balconyhint");
+
+/* larghezza pannello + aria per il calcolo dai metri del balcone (cm) */
+const PANEL_PITCH_CM = 115; // 114 cm di pannello + 1 cm d'aria
 
 let PANEL=null, SYSTEMS=[], STORE={}, VIDEOS=[], current=null, count=2, dist=5;
 
@@ -292,6 +312,7 @@ function render(){
   const arr=arrange(s,count);
   const totW=count*PANEL.w;
   const hasPar=arr.some(g=>g.par>1);
+  const hasSeries=arr.some(g=>g.ser>1);
 
   const rows=arr.map((g,i)=>{
     let desc;
@@ -389,6 +410,8 @@ function render(){
   }
   if(s.note==="custom" && s.minSeries>1 && s.startup)
     notes+=note("warn","!",`Hai indicato una tensione di avvio MPPT di <b>${num(s.startup)}&nbsp;V</b>: un <b>singolo</b> pannello (Voc ${num(PANEL.voc)}&nbsp;V) non basta ad avviarlo — il tool raggruppa sempre almeno 2 pannelli in serie.`);
+  if(hasSeries)
+    notes+=note("warn","!",`I pannelli collegati <b>in serie</b> devono avere lo <b>stesso orientamento</b> ed essere esposti alla stessa luce: se uno è in ombra o montato al contrario, limita l'intera stringa.`);
   if(hasPar)
     notes+=note("info","Y",`Per il <b>parallelo</b> serve un cavo a Y (sdoppiatore MC4): unisci i poli <b>+</b> tra loro e i <b>−</b> tra loro.`);
   notes+=note("info","i",`In Italia un impianto plug&nbsp;&&nbsp;play immette in rete <b>max 800&nbsp;W</b>: è il sistema a limitarlo. Puoi installare più Watt di pannelli — l'extra rende di più con poca luce.`);
@@ -490,6 +513,22 @@ async function init(){
   incB.addEventListener("click",()=>{ count++; render(); });
   decB.addEventListener("click",()=>{ count--; render(); });
   distR.addEventListener("input",e=>{ dist=+e.target.value; distV.textContent=dist; render(); });
+  // calcolo automatico del numero di pannelli dalla lunghezza del balcone
+  balconyEl.addEventListener("input",()=>{
+    const m = parseFloat(String(balconyEl.value).replace(',','.'));
+    if(!m || m<=0){ balconyHint.textContent="Ogni pannello è largo 1,14 m: conto 1,15 m l'uno (1 cm d'aria) e arrotondo per difetto."; return; }
+    const cm  = Math.round(m*100);                          // evita errori di virgola mobile (4,6→460)
+    const fit = Math.floor(cm/PANEL_PITCH_CM);              // pannelli affiancati nel balcone
+    const mx  = maxTotal(current);
+    if(fit<1){ balconyHint.textContent=`Con ${num(m)} m entra meno di un pannello (ne serve almeno 1,15 m).`; return; }
+    count = Math.min(fit, mx);
+    let msg = fit===1
+      ? `C'entra <b>1</b> pannello affiancato (1,15 m).`
+      : `Ci stanno <b>${fit}</b> pannelli affiancati (1,15 m l'uno).`;
+    if(fit>mx) msg += ` Ma questo sistema ne accetta al massimo <b>${mx}</b>.`;
+    balconyHint.innerHTML = msg;
+    render();
+  });
   // ricalcolo live dei dati inverter personalizzato
   ["#c-inputs","#c-vmax","#c-imax","#c-startup"].forEach(id=>{
     $(id).addEventListener("input",()=>{ if(sysSel.value===CUSTOM_ID){ current=buildCustom(); count=Math.min(count,maxTotal(current)); render(); } });
