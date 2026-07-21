@@ -180,10 +180,12 @@
 
   <div class="card" id="result" aria-live="polite"></div>
 
+  <div class="card" id="videos" hidden></div>
+
   <div class="cta">
     <h3>Pronto a partire?</h3>
-    <p>Trovi il kit 2×220&nbsp;W sullo store DinamoTech. Per la detrazione fiscale del 50% scegli il bonifico per agevolazione fiscale al checkout.</p>
-    <a class="btn" href="https://dinamotech.it/products/pannelli-fotovoltaici-flessibili-ultraleggeri-440-w-2x220-w" target="_blank" rel="noopener">Vai al kit pannelli →</a>
+    <p>Sullo store DinamoTech trovi il kit completo. Per la detrazione fiscale del 50% scegli il bonifico per agevolazione fiscale al checkout.</p>
+    <a class="btn" id="ctaBtn" href="https://dinamotech.it/products/pannelli-fotovoltaici-flessibili-ultraleggeri-440-w-2x220-w" target="_blank" rel="noopener">Vai al kit pannelli →</a>
   </div>
 
   <p class="disclaimer">Indicazioni basate sulle schede tecniche dei sistemi (giugno 2026) e sulle regole di cablaggio DinamoTech. Verifica sempre il manuale del tuo modello e la normativa locale prima del collegamento. In caso di dubbio, rivolgiti a un installatore.</p>
@@ -201,9 +203,10 @@
 
 const $ = s => document.querySelector(s);
 const sysSel=$("#sys"), cntEl=$("#cnt"), incB=$("#inc"), decB=$("#dec"),
-      distR=$("#dist-range"), distV=$("#distv"), customBox=$("#customBox");
+      distR=$("#dist-range"), distV=$("#distv"), customBox=$("#customBox"),
+      ctaBtn=$("#ctaBtn"), videosEl=$("#videos");
 
-let PANEL=null, SYSTEMS=[], STORE={}, current=null, count=2, dist=5;
+let PANEL=null, SYSTEMS=[], STORE={}, VIDEOS=[], current=null, count=2, dist=5;
 
 const CUSTOM_ID = "custom";
 
@@ -336,15 +339,31 @@ function render(){
     </a>`);
   buy.push(`<a class="buyrow" href="${esc(STORE.cablesUrl)}" target="_blank" rel="noopener">
       <span class="bi" aria-hidden="true">〜</span>
-      <span class="bt"><b>Cavo solare H1Z2Z2-K e staffe</b><small>sezione ${sec} · vetrina Amazon DinamoTech</small></span>
+      <span class="bt"><b>Cavo Solare e Connettori MC4</b><small>sezione ${sec} · vetrina Amazon DinamoTech</small></span>
       <span class="bgo">Apri Amazon →</span>
     </a>`);
-  if(hasPar)
+  if(hasPar){
+    // serve uno sdoppiatore per ogni ingresso in parallelo; il tipo dipende dal
+    // numero di stringhe di quell'ingresso (2→doppio, 3→triplo). Config miste possibili.
+    const splitWord = p => ({2:"doppio",3:"triplo",4:"quadruplo"}[p] || `a ${p} vie`);
+    const groups={}; arr.forEach(g=>{ if(g.par>1) groups[g.par]=(groups[g.par]||0)+1; });
+    const pars=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+    const total=pars.reduce((a,p)=>a+groups[p],0);
+    let title, sub;
+    if(pars.length===1){
+      const p=pars[0];
+      title=`${total}× Sdoppiatore MC4 a Y ${splitWord(p)}`;
+      sub=`uno per ogni ingresso in parallelo · ${total} ${total===1?'ingresso':'ingressi'} da ${p} stringhe`;
+    }else{
+      title=`${total}× Sdoppiatore MC4 a Y`;
+      sub=pars.map(p=>`${groups[p]}× ${splitWord(p)}`).join(" + ")+" · uno per ogni ingresso in parallelo";
+    }
     buy.push(`<a class="buyrow" href="${esc(STORE.mc4SplitterUrl)}" target="_blank" rel="noopener">
       <span class="bi" aria-hidden="true">Y</span>
-      <span class="bt"><b>Sdoppiatore MC4 a Y</b><small>serve per collegare le stringhe in parallelo</small></span>
+      <span class="bt"><b>${title}</b><small>${sub}</small></span>
       <span class="bgo">Apri Amazon →</span>
     </a>`);
+  }
   const buylist = `<p class="how">La tua lista d'acquisto</p><div class="buylist">${buy.join("")}</div>`;
 
   /* --- note --- */
@@ -404,7 +423,25 @@ function render(){
     <p class="basis">Calcolo sul pannello DinamoTech ${PANEL.w}&nbsp;W — Vmp ${num(PANEL.vmp)}&nbsp;V · Voc ${num(PANEL.voc)}&nbsp;V · Isc ${num(PANEL.isc)}&nbsp;A · MC4. Serie max ${s.maxSeries} (≤${s.vmax}&nbsp;V); parallelo limitato dalla corrente dell'ingresso.</p>
   `;
 
+  /* CTA: link al kit corretto per il sistema scelto (fallback: pagina pannelli) */
+  ctaBtn.href = s.kitUrl || STORE.panelKitUrl;
+  ctaBtn.textContent = s.kitUrl ? "Vai al kit completo →" : "Vai al kit pannelli →";
+
   postHeight();
+}
+
+/* card "Video di approfondimento" (statica, da data.json) */
+function renderVideos(){
+  if(!VIDEOS.length){ videosEl.hidden=true; return; }
+  videosEl.hidden=false;
+  videosEl.innerHTML =
+    `<p class="how" style="margin:0 0 12px">Video di approfondimento</p>
+     <div class="buylist">${VIDEOS.map(v=>`
+       <a class="buyrow" href="${esc(v.url)}" target="_blank" rel="noopener">
+         <span class="bi" aria-hidden="true">▶</span>
+         <span class="bt"><b>${v.label}</b></span>
+         <span class="bgo">Guarda →</span>
+       </a>`).join("")}</div>`;
 }
 
 /* seleziona il sistema corrente in base al valore del select */
@@ -429,6 +466,7 @@ async function init(){
     const data = await res.json();
     PANEL   = data.panel;
     STORE   = Object.assign({}, STORE_DEFAULT, data.store||{});
+    VIDEOS  = data.videos || [];
     SYSTEMS = (data.systems||[]).map(s=>({ ...s, color: s.color || BRAND_COLOR[s.brand] || "var(--ink)" }));
     if(!PANEL || !SYSTEMS.length) throw new Error("data.json incompleto o vuoto");
   }catch(err){
@@ -441,6 +479,8 @@ async function init(){
 
   SYSTEMS.forEach(s=>{ const o=document.createElement("option"); o.value=s.id; o.textContent=`${s.brand} · ${s.name}`; sysSel.appendChild(o); });
   const optC=document.createElement("option"); optC.value=CUSTOM_ID; optC.textContent="🔧 Altro inverter — inserisci i tuoi dati"; sysSel.appendChild(optC);
+
+  renderVideos();
 
   const def = SYSTEMS.find(s=>s.id==="sb3") || SYSTEMS[0];
   sysSel.value = def.id;

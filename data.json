@@ -20,12 +20,19 @@
     { "id": "sb2", "brand": "Anker", "name": "SOLIX SolarBank 2",
       "inputs": 4, "maxSeries": 3, "maxParallel": 1, "vmax": 60, "note": "sb2" },
     { "id": "sb3", "brand": "Anker", "name": "SOLIX SolarBank 3",
-      "inputs": 4, "maxSeries": 3, "maxParallel": 2, "vmax": 60, "note": "anker" },
+      "inputs": 4, "maxSeries": 3, "maxParallel": 2, "vmax": 60, "note": "anker",
+      "kitUrl": "https://dinamotech.it/products/anker-solix-solarbank-3-kit-personalizzato" },
     { "id": "sb4", "brand": "Anker", "name": "SOLIX SolarBank 4",
       "inputs": 4, "maxSeries": 3, "maxParallel": 3, "vmax": 60, "note": "anker" },
     { "id": "streamUltra", "brand": "EcoFlow", "name": "STREAM (Ultra / Ultra X)",
-      "inputs": 4, "maxSeries": 3, "maxParallel": 1, "vmax": 60, "note": "ultra" },
+      "inputs": 4, "maxSeries": 3, "maxParallel": 1, "vmax": 60, "note": "ultra",
+      "kitUrl": "https://dinamotech.it/products/ecoflow-stream-kit-personalizzato" },
     { "id": "stream5000", "brand": "EcoFlow", "name": "STREAM 5000",
       "inputs": 4, "maxSeries": 3, "maxParallel": 3, "vmax": 60, "startup": 20, "minSeries": 2, "note": "stream5000" }
+  ],
+  "videos": [
+    { "label": "Guida ai pannelli flessibili", "url": "https://youtu.be/pmRFJQc9gNo" },
+    { "label": "Come realizzare prolunghe fotovoltaiche", "url": "https://youtu.be/UhfqX_98vnA" },
+    { "label": "Compatibilità pannelli/inverter: serie e parallelo", "url": "https://youtu.be/7VhlgCiJMuo" }
   ]
 }
