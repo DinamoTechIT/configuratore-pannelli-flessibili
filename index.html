@@ -327,10 +327,10 @@ function svgWiring(lens){
   g+=`<line x1="${busX2}" y1="${bY1}" x2="${busX2}" y2="${bY2}" stroke="${BLK}" stroke-width="2.5"/>`;
   g+=`<line x1="${busX}" y1="${cy-6}" x2="${portX}" y2="${cy-6}" stroke="${RED}" stroke-width="2.5"/>`;
   g+=`<line x1="${busX2}" y1="${cy+6}" x2="${portX}" y2="${cy+6}" stroke="${BLK}" stroke-width="2.5"/>`;
-  if(par>1){ // lo sdoppiatore a Y sta esattamente al centro del punto di unione delle stringhe
-    const ycr=(yTops[0]+yTops[par-1])/2, ycm=(yMids[0]+yMids[par-1])/2;
-    g+=`<circle cx="${busX}" cy="${ycr}" r="6" fill="#87CB28"/><text x="${busX}" y="${ycr+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
-    g+=`<circle cx="${busX2}" cy="${ycm}" r="6" fill="#87CB28"/><text x="${busX2}" y="${ycm+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
+  if(par>1){ // le due Y alla stessa altezza: centro verticale esatto tra le stringhe
+    const yc = topPad + ((par-1)*ROWH + PH)/2;
+    g+=`<circle cx="${busX}" cy="${yc}" r="6" fill="#87CB28"/><text x="${busX}" y="${yc+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
+    g+=`<circle cx="${busX2}" cy="${yc}" r="6" fill="#87CB28"/><text x="${busX2}" y="${yc+2.8}" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="700" fill="#fff">Y</text>`;
   }
   // etichette polarità
   g+=`<text x="${px0+3}" y="${topPad-9}" font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="${RED}">+</text>`;
