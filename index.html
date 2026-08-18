@@ -385,39 +385,75 @@ function buildCustom(){
   return s;
 }
 
-/* distribuisce n pannelli sugli ingressi MPPT → [{k, ser, par}] per ingresso usato */
-function arrange(s,n){
-  const S=s.maxSeries, P=s.maxParallel, M=s.inputs, minS=s.minSeries||1;
+/* ---- distribuzione pannelli: il parallelo ammette SOLO stringhe uguali ---- */
 
-  if(minS>1){
-    // forma stringhe in serie (mai pannelli singoli), poi le distribuisce
-    const nStrings=Math.max(1, Math.ceil(n/S));
-    const base=Math.floor(n/nStrings), rem=n%nStrings;
-    const lens=[]; for(let i=0;i<nStrings;i++) lens.push(base+(i<rem?1:0));
-    const mUsed=Math.min(M, nStrings);
-    const buckets=Array.from({length:mUsed},()=>[]);
-    lens.forEach((L,idx)=>buckets[idx%mUsed].push(L));
-    return buckets.map(ls=>{ const sorted=ls.slice().sort((a,b)=>b-a);
-      return { k:ls.reduce((a,b)=>a+b,0), ser:Math.max(...ls), par:ls.length, lens:sorted }; });
+/* carichi ammessi per un singolo ingresso: p stringhe UGUALI da L pannelli */
+function allowedSizes(s){
+  const minS=s.minSeries||1, out=new Set();
+  for(let p=1;p<=s.maxParallel;p++)
+    for(let L=minS;L<=s.maxSeries;L++)
+      out.add(p*L);
+  return [...out].sort((a,b)=>a-b);
+}
+
+/* dp[m] = totali ottenibili usando esattamente m ingressi */
+function loadDP(s){
+  const A=allowedSizes(s), M=s.inputs, cap=maxTotal(s);
+  const dp=[new Set([0])];
+  for(let m=1;m<=M;m++){
+    const prev=dp[m-1], cur=new Set();
+    prev.forEach(v=>A.forEach(a=>{ if(v+a<=cap) cur.add(v+a); }));
+    dp.push(cur);
   }
+  return dp;
+}
 
-  const mUsed=Math.min(M,n);
-  const groups=[]; let left=n;
-  for(let i=0;i<mUsed;i++){ const k=Math.ceil(left/(mUsed-i)); left-=k; groups.push(k); }
-  return groups.map(k=>{
-    const par=Math.min(P,Math.ceil(k/S));
-    // lunghezze reali delle stringhe: es. 8 pannelli su 3 stringhe → 3+3+2
-    const base=Math.floor(k/par), rem=k%par;
-    const lens=[]; for(let i=0;i<par;i++) lens.push(base+(i<rem?1:0));
-    return {k, ser:Math.max(...lens), par, lens};
+/* tutte le quantità totali realizzabili (per lo stepper: i totali "impossibili" vengono saltati) */
+function feasibleTotals(s){
+  const all=new Set();
+  loadDP(s).forEach((set,m)=>{ if(m>0) set.forEach(v=>all.add(v)); });
+  return all;
+}
+
+/* distribuisce n pannelli sugli ingressi MPPT → [{k, ser, par, lens}] per ingresso usato.
+   Ogni ingresso riceve un carico ammesso (stringhe uguali); si usano più ingressi possibile
+   e i carichi vengono bilanciati. */
+function arrange(s,n){
+  const A=allowedSizes(s), dp=loadDP(s), M=s.inputs, minS=s.minSeries||1;
+  let m=M; while(m>1 && !dp[m].has(n)) m--;
+  const parts=[]; let rem=n;
+  for(let r=m;r>=1&&rem>0;r--){
+    const target=rem/r;
+    let bestA=null;
+    for(const a of A){
+      if(a>rem || !dp[r-1].has(rem-a)) continue;
+      if(bestA===null || Math.abs(a-target)<Math.abs(bestA-target)
+         || (Math.abs(a-target)===Math.abs(bestA-target) && a>bestA)) bestA=a;
+    }
+    if(bestA===null){ parts.push(rem); rem=0; break; }
+    parts.push(bestA); rem-=bestA;
+  }
+  parts.sort((a,b)=>b-a);
+  return parts.map(k=>{
+    let L=Math.min(k,s.maxSeries);
+    for(let cand=s.maxSeries;cand>=minS;cand--)
+      if(k%cand===0 && k/cand<=s.maxParallel){ L=cand; break; }
+    const p=Math.max(1,Math.round(k/L));
+    return {k, ser:L, par:p, lens:Array(p).fill(L)};
   });
 }
 
+let FEAS=new Set();
+
 function render(){
   const s=current, mx=maxTotal(s), P=s.maxParallel;
+  FEAS=feasibleTotals(s);
+  // aggancia il conteggio al totale realizzabile più vicino (verso il basso)
   count=Math.min(Math.max(1,count),mx);
+  if(!FEAS.has(count)){ let c=count; while(c>=1&&!FEAS.has(c)) c--; count=(c>=1)?c:Math.min(...FEAS); }
+  const minF=Math.min(...FEAS);
   cntEl.textContent=count;
-  decB.disabled=count<=1; incB.disabled=count>=mx;
+  decB.disabled=count<=minF; incB.disabled=count>=mx;
   $("#maxhint").textContent=`Massimo ${mx} pannelli: ${perMPPT(s)} per ingresso × ${s.inputs} ingressi MPPT.`;
 
   const arr=arrange(s,count);
@@ -535,7 +571,7 @@ function render(){
   if(hasSeries)
     notes+=note("warn","!",`I pannelli collegati <b>in serie</b> devono avere lo <b>stesso orientamento</b> ed essere esposti alla stessa luce: se uno è in ombra o montato al contrario, limita l'intera stringa.`);
   if(hasPar)
-    notes+=note("info","Y",`Per il <b>parallelo</b> serve un cavo a Y (sdoppiatore MC4): unisci i poli <b>+</b> tra loro e i <b>−</b> tra loro.`);
+    notes+=note("info","Y",`Per il <b>parallelo</b> serve un cavo a Y (sdoppiatore MC4): unisci i poli <b>+</b> tra loro e i <b>−</b> tra loro. Le stringhe in parallelo devono avere lo <b>stesso numero di pannelli</b> (stessa tensione).`);
   notes+=vlink(vid("serieParallelo"));
 
   $("#result").innerHTML=`
@@ -623,8 +659,9 @@ async function init(){
   current = def;
 
   sysSel.addEventListener("change",e=>selectSystem(e.target.value));
-  incB.addEventListener("click",()=>{ count++; render(); });
-  decB.addEventListener("click",()=>{ count--; render(); });
+  // +/− saltano i totali non realizzabili (il parallelo richiede stringhe uguali)
+  incB.addEventListener("click",()=>{ const mx=maxTotal(current); let c=count+1; while(c<=mx&&!FEAS.has(c)) c++; if(c<=mx) count=c; render(); });
+  decB.addEventListener("click",()=>{ let c=count-1; while(c>=1&&!FEAS.has(c)) c--; if(c>=1) count=c; render(); });
   distR.addEventListener("input",e=>{ dist=+e.target.value; distV.textContent=dist; render(); });
   // calcolo automatico del numero di pannelli dalla lunghezza del balcone
   balconyEl.addEventListener("input",()=>{
@@ -639,8 +676,9 @@ async function init(){
       ? `C'entra <b>1</b> pannello affiancato (1,15 m).`
       : `Ci stanno <b>${fit}</b> pannelli affiancati (1,15 m l'uno).`;
     if(fit>mx) msg += ` Ma questo sistema ne accetta al massimo <b>${mx}</b>.`;
+    render(); // puo' ridurre il conteggio al totale realizzabile piu' vicino
+    if(count<Math.min(fit,mx)) msg += ` Ne configuro <b>${count}</b>: il parallelo richiede stringhe di pannelli uguali.`;
     balconyHint.innerHTML = msg;
-    render();
   });
   // ricalcolo live dei dati inverter personalizzato
   ["#c-inputs","#c-vmax","#c-imax","#c-startup"].forEach(id=>{
